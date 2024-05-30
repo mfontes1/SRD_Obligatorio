@@ -1,0 +1,111 @@
+# Se definieron los servicios para el despliegue de la aplicación segun el contenido del 
+# dockerfile de cada servicio.
+
+version: '3.8'
+
+volumes:
+  redis-data:
+
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes  
+
+  ad-service:
+    build:
+      context: ./adservice
+      dockerfile: Dockerfile
+
+  cart-service:
+    build:
+      context: ./cartservice/src
+      dockerfile: Dockerfile
+    environment:
+      REDIS_ADDR: ${REDIS_ADDR}
+    
+  checkout-service:
+    build:
+      context: ./checkoutservice
+      dockerfile: Dockerfile
+    environment:
+      PRODUCT_CATALOG_SERVICE_ADDR: ${PRODUCT_CATALOG_SERVICE}
+      CURRENCY_SERVICE_ADDR: ${CURRENCY_SERVICE}
+      CART_SERVICE_ADDR: ${CART_SERVICE}
+      SHIPPING_SERVICE_ADDR: ${SHIPPING_SERVICE}
+      PAYMENT_SERVICE_ADDR: ${PAYMENT_SERVICE}
+      EMAIL_SERVICE_ADDR: ${EMAIL_SERVICE}
+
+  email-server:
+    build:
+      context: ./emailservice
+      dockerfile: Dockerfile
+  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    environment:
+      PRODUCT_CATALOG_SERVICE_ADDR: ${PRODUCT_CATALOG_SERVICE}
+      CURRENCY_SERVICE_ADDR: ${CURRENCY_SERVICE}
+      CART_SERVICE_ADDR: ${CART_SERVICE}
+      RECOMMENDATION_SERVICE_ADDR: ${RECOMMENDATION_SERVICE}
+      SHIPPING_SERVICE_ADDR: ${SHIPPING_SERVICE}
+      CHECKOUT_SERVICE_ADDR: ${CHECKOUT_SERVICE}
+      AD_SERVICE_ADDR: ${AD_SERVICE}
+      ENV_PLATFORM: ${ENV_PLATFORM} 
+  
+  currency-service:
+    build:
+      context: ./currencyservice
+      dockerfile: Dockerfile
+    ports:
+      - 7000:7000
+    environment:
+      PORT: ${CURRENCY_PORT}
+      DISABLE_DEBUGGER: ${DISABLE_DEBUGGER}
+      DISABLE_PROFILER: ${DISABLE_PROFILER}
+      DISABLE_TRACING: ${DISABLE_TRACING}  
+
+  recommendation-service:
+    build:
+      context: ./recommendationservice
+      dockerfile: Dockerfile
+    environment:
+      PRODUCT_CATALOG_SERVICE_ADDR: ${PRODUCT_CATALOG_SERVICE}
+      DISABLE_DEBUGGER: ${DISABLE_DEBUGGER}
+      DISABLE_PROFILER: ${DISABLE_PROFILER}
+      DISABLE_TRACING: ${DISABLE_TRACING}
+   
+  shipping-service:
+    build:
+      context: ./shippingservice
+      dockerfile: Dockerfile
+    ports:
+      - 50051:50051
+    environment:
+       PORT: ${SHIPPING_PORT}
+  #    DISABLE_STATS: ${DISABLE_STATS}
+  #    DISABLE_TRACING: ${DISABLE_TRACING}
+  #    DISABLE_PROFILER: ${DISABLE_PROFILER}
+
+   
+  product-catalog-service:
+    build:
+      context: ./productcatalogservice
+      dockerfile: Dockerfile
+    
+  payment-service:
+    build:
+      context: ./paymentservice
+      dockerfile: Dockerfile
+    environment:
+      PORT: ${PAYMENT_PORT}
+      DISABLE_DEBUGGER: ${DISABLE_DEBUGGER}
+      DISABLE_PROFILER: ${DISABLE_PROFILER}
+      DISABLE_TRACING: ${DISABLE_TRACING}
